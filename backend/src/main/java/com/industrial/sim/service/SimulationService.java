@@ -10,6 +10,7 @@ import com.industrial.sim.entity.Topology;
 import com.industrial.sim.repository.NodeRepository;
 import com.industrial.sim.repository.SimulationRunRepository;
 import com.industrial.sim.repository.TopologyRepository;
+import com.industrial.sim.util.PathUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -106,12 +107,16 @@ public class SimulationService {
         // Generate run ID
         String runId = "run_" + UUID.randomUUID().toString().substring(0, 8);
         
-        // Create run directory
-        Path runDir = Paths.get(dataDir, "projects", req.getProjectCode(), "runs", runId);
+        // Create run directory with safe path
+        Path baseDir = Paths.get(dataDir);
+        Path runDir;
         try {
+            runDir = PathUtils.createSafePath(baseDir, "projects", req.getProjectCode(), "runs", runId);
             Files.createDirectories(runDir);
         } catch (IOException e) {
             throw new RuntimeException("创建运行目录失败", e);
+        } catch (SecurityException e) {
+            throw new RuntimeException("路径安全检查失败", e);
         }
         
         // Generate INI and NED files
@@ -131,15 +136,28 @@ public class SimulationService {
             throw new RuntimeException("拓扑JSON解析失败", e);
         }
         
-        // Save INI and NED to run directory
-        Path iniPath = runDir.resolve("omnetpp.ini");
-        Path nedPath = runDir.resolve("topology.ned");
+        // Save INI and NED to run directory with safe paths
+        Path iniPath;
+        Path nedPath;
+        Path logPath;
+        Path sqliteVecPath;
+        Path sqliteScaPath;
+        Path pcapPath;
         
         try {
+            iniPath = PathUtils.createSafePath(runDir, "omnetpp.ini");
+            nedPath = PathUtils.createSafePath(runDir, "topology.ned");
+            logPath = PathUtils.createSafePath(runDir, "simulation.log");
+            sqliteVecPath = PathUtils.createSafePath(runDir, "results.vec");
+            sqliteScaPath = PathUtils.createSafePath(runDir, "results.sca");
+            pcapPath = PathUtils.createSafePath(runDir, "results");
+            
             Files.writeString(iniPath, iniContent);
             Files.writeString(nedPath, nedContent);
         } catch (IOException e) {
             throw new RuntimeException("保存配置文件失败", e);
+        } catch (SecurityException e) {
+            throw new RuntimeException("路径安全检查失败", e);
         }
         
         // Create simulation run record
@@ -151,10 +169,10 @@ public class SimulationService {
         run.setNedFilePath(nedPath.toString());
         run.setStatus(0); // STARTING
         run.setStartTime(LocalDateTime.now());
-        run.setLogPath(runDir.resolve("simulation.log").toString());
-        run.setSqliteVectorPath(runDir.resolve("results.vec").toString());
-        run.setSqliteScalarPath(runDir.resolve("results.sca").toString());
-        run.setPcapPath(runDir.resolve("results").toString());
+        run.setLogPath(logPath.toString());
+        run.setSqliteVectorPath(sqliteVecPath.toString());
+        run.setSqliteScalarPath(sqliteScaPath.toString());
+        run.setPcapPath(pcapPath.toString());
         
         run = simulationRunRepository.save(run);
         

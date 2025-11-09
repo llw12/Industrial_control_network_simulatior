@@ -7,6 +7,7 @@ import com.industrial.sim.entity.Node;
 import com.industrial.sim.entity.Topology;
 import com.industrial.sim.repository.NodeRepository;
 import com.industrial.sim.repository.TopologyRepository;
+import com.industrial.sim.util.PathUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -124,16 +125,19 @@ public class TopologyService {
     
     private String saveNedFile(String projectCode, int version, String content) {
         try {
-            Path projectDir = Paths.get(dataDir, "projects", projectCode, "topology");
+            Path baseDir = Paths.get(dataDir);
+            Path projectDir = PathUtils.createSafePath(baseDir, "projects", projectCode, "topology");
             Files.createDirectories(projectDir);
             
             String filename = String.format("topology_v%d.ned", version);
-            Path nedFile = projectDir.resolve(filename);
+            Path nedFile = PathUtils.createSafePath(projectDir, filename);
             Files.writeString(nedFile, content);
             
             return nedFile.toString();
         } catch (IOException e) {
             throw new RuntimeException("NED文件保存失败", e);
+        } catch (SecurityException e) {
+            throw new RuntimeException("路径安全检查失败", e);
         }
     }
     
