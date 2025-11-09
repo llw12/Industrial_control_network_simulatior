@@ -24,7 +24,7 @@ server:
 
 # Application specific settings
 simulation:
-  data-dir: /data
+  data-dir: ${user.home}/industrial-sim-data
   omnetpp:
     home: ~/omnetpp-6.1
     inet-workspace: ~/omnetpp-6.1/WorkSpace/inet4.5

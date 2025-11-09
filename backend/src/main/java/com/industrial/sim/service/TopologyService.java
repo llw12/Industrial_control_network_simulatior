@@ -29,7 +29,7 @@ public class TopologyService {
     private final GenerationService generationService;
     private final ObjectMapper objectMapper;
     
-    @Value("${simulation.data-dir:/data}")
+    @Value("${simulation.data-dir:${user.home}/industrial-sim-data}")
     private String dataDir;
     
     @Transactional
