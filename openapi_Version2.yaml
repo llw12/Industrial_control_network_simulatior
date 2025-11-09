@@ -1,0 +1,671 @@
+openapi: 3.0.3
+info:
+  title: 工业控制网络仿真平台 API
+  version: 1.1.0
+servers:
+  - url: /api/v1
+paths:
+  /projects:
+    post:
+      summary: 新建项目
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectReq"
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResp"
+    get:
+      summary: 查询项目列表
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: keywords
+          schema: { type: string }
+      responses:
+        '200':
+          description: 列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectListResp"
+  /projects/{projectCode}:
+    get:
+      summary: 获取项目详情
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 详情
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResp"
+    put:
+      summary: 更新项目信息
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectReq"
+      responses:
+        '200':
+          description: 更新成功
+    delete:
+      summary: 删除项目
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 删除结果
+  /projects/{projectCode}/nodes:
+    get:
+      summary: 查询节点列表
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: 节点列表
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NodeListResp"
+    post:
+      summary: 保存节点配置（新增/更新）
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveNodeReq"
+      responses:
+        '200':
+          description: 保存结果
+  /projects/{projectCode}/nodes/batch:
+    post:
+      summary: 批量保存节点
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nodes:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SaveNodeReq"
+      responses:
+        '200':
+          description: 批量结果
+  /projects/{projectCode}/nodes/{nodeId}:
+    get:
+      summary: 获取单个节点配置
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+        - in: path
+          name: nodeId
+          required: true
+      responses:
+        '200':
+          description: 节点详情
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NodeResp"
+    put:
+      summary: 修改节点
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+        - in: path
+          name: nodeId
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNodeReq"
+      responses:
+        '200':
+          description: 修改结果
+    delete:
+      summary: 删除节点
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+        - in: path
+          name: nodeId
+          required: true
+      responses:
+        '200':
+          description: 删除结果
+  /projects/{projectCode}/nodes/validate:
+    post:
+      summary: 节点配置校验（字段合法性）
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nodeIds:
+                  type: array
+                  items: { type: string }
+      responses:
+        '200':
+          description: 校验结果
+  /projects/{projectCode}/nodes/ports/check:
+    post:
+      summary: 端口冲突检测（同节点 localPort 不可重复）
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nodes:
+                  type: array
+                  items: { type: object }
+      responses:
+        '200':
+          description: 冲突检测结果
+  /projects/{projectCode}/configs:
+    get:
+      summary: 列出 Master/Slave 配置文件版本
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+        - in: query
+          name: fileType
+          schema: { type: string, enum: [MASTER, SLAVE] }
+      responses:
+        '200':
+          description: 列表
+    post:
+      summary: 新增配置文件版本（GUI 编辑提交）
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveConfigReq"
+      responses:
+        '200':
+          description: 保存结果
+  /projects/{projectCode}/configs/{configId}:
+    get:
+      summary: 获取配置文件内容
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+        - in: path
+          name: configId
+          required: true
+      responses:
+        '200':
+          description: 配置详情
+    put:
+      summary: 更新配置文件（新版本或覆盖）
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+        - in: path
+          name: configId
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveConfigReq"
+      responses:
+        '200':
+          description: 更新结果
+    delete:
+      summary: 删除配置文件版本
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+        - in: path
+          name: configId
+          required: true
+      responses:
+        '200':
+          description: 删除结果
+  /projects/{projectCode}/configs/validate:
+    post:
+      summary: 校验配置文件 JSON 结构合法性
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidateConfigReq"
+      responses:
+        '200':
+          description: 校验结果
+  /projects/{projectCode}/topology:
+    post:
+      summary: 保存拓扑（生成 NED，保存配置）
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveTopologyReq"
+      responses:
+        '200':
+          description: 保存结果
+  /projects/{projectCode}/topology/latest:
+    get:
+      summary: 获取最新拓扑版本
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+      responses:
+        '200':
+          description: 最新拓扑
+  /projects/{projectCode}/topology/{version}:
+    get:
+      summary: 获取指定版本拓扑
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+        - in: path
+          name: version
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 指定版本拓扑
+  /projects/{projectCode}/preview/ned:
+    post:
+      summary: 生成 NED 预览（不落盘）
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreviewReq"
+      responses:
+        '200':
+          description: NED 内容
+  /projects/{projectCode}/preview/ini:
+    post:
+      summary: 生成 INI 预览（不落盘）
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreviewReq"
+      responses:
+        '200':
+          description: INI 内容
+  /projects/{projectCode}/hil-clients:
+    get:
+      summary: HIL 客户端概览（索引与远端配置）
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+      responses:
+        '200':
+          description: HIL 概览
+  /simulations/precheck:
+    post:
+      summary: 启动前预检查（端口、HIL、配置）
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrecheckReq"
+      responses:
+        '200':
+          description: 预检查结果
+  /simulations/start:
+    post:
+      summary: 启动仿真（可入队）
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartSimulationReq"
+      responses:
+        '200':
+          description: 启动结果
+  /simulations/{runId}/stop:
+    post:
+      summary: 停止仿真
+      parameters:
+        - in: path
+          name: runId
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StopSimulationReq"
+      responses:
+        '200':
+          description: 停止结果
+  /simulations:
+    get:
+      summary: 仿真实例列表
+      parameters:
+        - in: query
+          name: projectCode
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: integer }
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: pageSize
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 列表
+  /simulations/{runId}:
+    get:
+      summary: 仿真实例详情
+      parameters:
+        - in: path
+          name: runId
+          required: true
+      responses:
+        '200':
+          description: 详情
+  /simulations/{runId}/ini-file:
+    get:
+      summary: 下载运行 INI 文件
+      parameters:
+        - in: path
+          name: runId
+          required: true
+      responses:
+        '200':
+          description: 文件
+  /projects/{projectCode}/topology/{version}/ned-file:
+    get:
+      summary: 下载 NED 文件
+      parameters:
+        - in: path
+          name: projectCode
+          required: true
+        - in: path
+          name: version
+          required: true
+      responses:
+        '200':
+          description: 文件
+  /simulation-results:
+    get:
+      summary: 查询仿真结果（分页筛选）
+      parameters:
+        - in: query
+          name: runId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: metricType
+          schema: { type: string, enum: [scalar, vector, custom] }
+        - in: query
+          name: keyword
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: pageSize
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 列表
+  /simulation-results/export:
+    get:
+      summary: 导出结果（CSV/JSON）
+      parameters:
+        - in: query
+          name: runId
+          required: true
+        - in: query
+          name: format
+          schema: { type: string, enum: [csv, json] }
+      responses:
+        '200':
+          description: 文件
+  /simulation-results/aggregate:
+    get:
+      summary: 聚合统计（min/max/avg/p95/p99）
+      parameters:
+        - in: query
+          name: runId
+          required: true
+        - in: query
+          name: metrics
+          schema: { type: string, description: "以逗号分隔的指标名" }
+        - in: query
+          name: percentiles
+          schema: { type: string, description: "如 95,99" }
+      responses:
+        '200':
+          description: 聚合
+  /simulation-results/vector:
+    get:
+      summary: Vector 分块获取
+      parameters:
+        - in: query
+          name: runId
+          required: true
+        - in: query
+          name: metricName
+          required: true
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 500 }
+      responses:
+        '200':
+          description: 分块数据
+components:
+  schemas:
+    CreateProjectReq:
+      type: object
+      properties:
+        projectName: { type: string }
+        simTimeLimit: { type: string }
+        description: { type: string }
+        createUser: { type: string }
+      required: [projectName]
+    UpdateProjectReq:
+      type: object
+      properties:
+        projectName: { type: string }
+        simTimeLimit: { type: string }
+        description: { type: string }
+    ProjectResp:
+      type: object
+      properties:
+        code: { type: integer }
+        data:
+          type: object
+          properties:
+            projectCode: { type: string }
+            projectName: { type: string }
+            simTimeLimit: { type: string }
+            status: { type: integer }
+    ProjectListResp:
+      type: object
+      properties:
+        code: { type: integer }
+        data:
+          type: object
+          properties:
+            list:
+              type: array
+              items: { type: object }
+            total: { type: integer }
+    SaveNodeReq:
+      type: object
+      properties:
+        nodeId: { type: string }
+        nodeType: { type: string }
+        displayX: { type: integer }
+        displayY: { type: integer }
+        params:
+          type: object
+          additionalProperties: true
+      required: [nodeId, nodeType]
+    UpdateNodeReq:
+      type: object
+      properties:
+        displayX: { type: integer }
+        displayY: { type: integer }
+        params: { type: object }
+    NodeResp:
+      type: object
+      properties:
+        code: { type: integer }
+        data: { type: object }
+    NodeListResp:
+      type: object
+      properties:
+        code: { type: integer }
+        data:
+          type: object
+          properties:
+            list:
+              type: array
+              items: { type: object }
+    SaveConfigReq:
+      type: object
+      properties:
+        fileType: { type: string, enum: [MASTER, SLAVE] }
+        contentJson: { type: object }
+        description: { type: string }
+      required: [fileType, contentJson]
+    ValidateConfigReq:
+      type: object
+      properties:
+        fileType: { type: string, enum: [MASTER, SLAVE] }
+        contentJson: { type: object }
+    SaveTopologyReq:
+      type: object
+      properties:
+        graph:
+          type: object
+          properties:
+            nodes: { type: array, items: { type: object } }
+            edges: { type: array, items: { type: object } }
+            meta: { type: object }
+        masterConfigJson: { type: object }
+        slaveConfigJson: { type: object }
+      required: [graph]
+    PreviewReq:
+      type: object
+      properties:
+        topologyVersion: { type: integer, description: "不传则根据最新" }
+    PrecheckReq:
+      type: object
+      properties:
+        projectCode: { type: string }
+        topologyVersion: { type: integer }
+      required: [projectCode, topologyVersion]
+    StartSimulationReq:
+      type: object
+      properties:
+        projectCode: { type: string }
+        topologyVersion: { type: integer }
+        iniTemplateParams:
+          type: object
+          properties:
+            simTimeLimit: { type: string }
+            enableHardInLoop: { type: boolean }
+            captureRules:
+              type: array
+              description: "任意节点抓包规则"
+              items:
+                type: object
+                properties:
+                  nodeId: { type: string }
+                  moduleNamePatterns: { type: string }
+                  pcapFile: { type: string }
+        queued: { type: boolean, default: false }
+      required: [projectCode, topologyVersion]
+    StopSimulationReq:
+      type: object
+      properties:
+        reason: { type: string }
