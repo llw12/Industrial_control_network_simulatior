@@ -19,6 +19,27 @@ public class TopologyDTO {
         private String type;
         private Integer x;
         private Integer y;
+        private Boolean isHil;
+        private Integer localPort;
+        private EthConfig eth;
+        private CaptureConfig capture;
+        private List<Map<String, Object>> apps;
+    }
+    
+    @Data
+    public static class EthConfig {
+        private String bitrate;
+        private String channelLength;
+        private String delay;
+        private Double ber;
+        private Double per;
+    }
+    
+    @Data
+    public static class CaptureConfig {
+        private Boolean enable;
+        private String moduleNamePatterns;
+        private String pcapFile;
     }
     
     @Data
@@ -33,6 +54,8 @@ public class TopologyDTO {
         private Integer numClients;
         private List<Integer> hilClientIndices;
         private String networkName;
+        private String masterConfig;
+        private String slaveConfig;
     }
     
     @Data
