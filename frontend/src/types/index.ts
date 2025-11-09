@@ -81,6 +81,8 @@ export interface GraphNode {
   type: string
   x: number
   y: number
+  isHil?: boolean
+  localPort?: number
 }
 
 export interface GraphEdge {
