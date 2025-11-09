@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: industrial-simulation-platform
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/industrial_sim?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
+    username: root
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+# Application specific settings
+simulation:
+  data-dir: /data
+  omnetpp:
+    home: ~/omnetpp-6.1
+    inet-workspace: ~/omnetpp-6.1/WorkSpace/inet4.5
+  scripts:
+    run: scripts/run_sim.sh
+    stop: scripts/stop_sim.sh
+  max-concurrent-runs: 5
+  enable-queue: true
+
+logging:
+  level:
+    com.industrial.sim: INFO
+    org.springframework.web: INFO
