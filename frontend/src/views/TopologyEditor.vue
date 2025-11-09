@@ -50,26 +50,145 @@
         
         <a-col :span="6">
           <a-card title="节点配置" v-if="selectedNode" class="config-panel">
-            <a-form layout="vertical">
-              <a-form-item label="节点ID">
-                <a-input v-model:value="selectedNode.id" disabled />
-              </a-form-item>
-              <a-form-item label="节点类型">
-                <a-input v-model:value="selectedNode.type" disabled />
-              </a-form-item>
-              <a-form-item label="是否HIL">
-                <a-switch v-model:checked="selectedNode.isHil" @change="updateNodeConfig" />
-              </a-form-item>
-              <a-form-item label="端口号">
-                <a-input-number 
-                  v-model:value="selectedNode.localPort" 
-                  :min="1" 
-                  :max="65535"
-                  style="width: 100%"
-                  @change="updateNodeConfig"
-                />
-              </a-form-item>
-            </a-form>
+            <a-tabs v-model:activeKey="configTabKey" size="small">
+              <a-tab-pane key="basic" tab="基本信息">
+                <a-form layout="vertical" size="small">
+                  <a-form-item label="节点ID">
+                    <a-input v-model:value="selectedNode.id" disabled />
+                  </a-form-item>
+                  <a-form-item label="节点类型">
+                    <a-input v-model:value="selectedNode.type" disabled />
+                  </a-form-item>
+                </a-form>
+              </a-tab-pane>
+              
+              <a-tab-pane key="network" tab="网络配置">
+                <a-form layout="vertical" size="small">
+                  <a-divider orientation="left">以太网设置</a-divider>
+                  <a-form-item label="链路速率 (bitrate)">
+                    <a-input v-model:value="selectedNode.eth.bitrate" placeholder="100Mbps" @change="updateNodeConfig" />
+                  </a-form-item>
+                  <a-form-item label="链路长度 (length)">
+                    <a-input v-model:value="selectedNode.eth.channelLength" placeholder="10m" @change="updateNodeConfig" />
+                  </a-form-item>
+                  <a-form-item label="误码率 (BER)">
+                    <a-input-number v-model:value="selectedNode.eth.ber" :min="0" :max="1" :step="0.0001" style="width: 100%" @change="updateNodeConfig" />
+                  </a-form-item>
+                  <a-form-item label="误包率 (PER)">
+                    <a-input-number v-model:value="selectedNode.eth.per" :min="0" :max="1" :step="0.0001" style="width: 100%" @change="updateNodeConfig" />
+                  </a-form-item>
+                </a-form>
+              </a-tab-pane>
+              
+              <a-tab-pane key="pcap" tab="抓包配置">
+                <a-form layout="vertical" size="small">
+                  <a-form-item label="启用抓包">
+                    <a-switch v-model:checked="selectedNode.capture.enable" @change="updateNodeConfig" />
+                  </a-form-item>
+                  <a-form-item label="抓包接口" v-if="selectedNode.capture.enable">
+                    <a-input v-model:value="selectedNode.capture.moduleNamePatterns" placeholder='eth[0]' @change="updateNodeConfig" />
+                  </a-form-item>
+                  <a-form-item label="输出文件" v-if="selectedNode.capture.enable">
+                    <a-input v-model:value="selectedNode.capture.pcapFile" placeholder="results/node.pcap" @change="updateNodeConfig" />
+                  </a-form-item>
+                </a-form>
+              </a-tab-pane>
+              
+              <a-tab-pane key="apps" tab="应用配置">
+                <a-form layout="vertical" size="small">
+                  <div v-for="(app, index) in selectedNode.apps" :key="index" style="margin-bottom: 16px; padding: 8px; border: 1px solid #f0f0f0; border-radius: 4px;">
+                    <a-divider orientation="left">应用 {{ index + 1 }}</a-divider>
+                    
+                    <a-form-item label="应用类型">
+                      <a-select v-model:value="app.typename" @change="updateNodeConfig" style="width: 100%">
+                        <a-select-option v-if="selectedNode.type === 'OperatorStation'" value="OperatorStationApp">OperatorStationApp</a-select-option>
+                        <a-select-option v-if="selectedNode.type === 'OperatorStation'" value="OperatorStationApp2">OperatorStationApp2</a-select-option>
+                        <a-select-option v-if="selectedNode.type === 'Server'" value="ModbusMasterApp">ModbusMasterApp</a-select-option>
+                        <a-select-option v-if="selectedNode.type === 'Server'" value="ModbusTcpServerApp">ModbusTcpServerApp</a-select-option>
+                        <a-select-option v-if="selectedNode.type === 'Server'" value="TransitApp">TransitApp</a-select-option>
+                        <a-select-option v-if="selectedNode.type === 'Client'" value="ModbusSlaveApp">ModbusSlaveApp</a-select-option>
+                        <a-select-option v-if="selectedNode.type === 'Client'" value="ModbusSlaveHILApp">ModbusSlaveHILApp</a-select-option>
+                      </a-select>
+                    </a-form-item>
+                    
+                    <a-form-item label="本地端口">
+                      <a-input-number v-model:value="app.localPort" :min="1" :max="65535" style="width: 100%" @change="updateNodeConfig" />
+                    </a-form-item>
+                    
+                    <template v-if="app.typename === 'OperatorStationApp'">
+                      <a-form-item label="连接地址">
+                        <a-input v-model:value="app.connectAddress" placeholder="server" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="连接端口">
+                        <a-input-number v-model:value="app.connectPort" :min="1" :max="65535" style="width: 100%" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="启动时间">
+                        <a-input v-model:value="app.startTime" placeholder="1s" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="发送间隔">
+                        <a-input v-model:value="app.interval" placeholder="0.5s" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="重连间隔">
+                        <a-input v-model:value="app.reconnectInterval" placeholder="2s" @change="updateNodeConfig" />
+                      </a-form-item>
+                    </template>
+                    
+                    <template v-if="app.typename === 'OperatorStationApp2'">
+                      <a-form-item label="连接地址">
+                        <a-input v-model:value="app.connectAddress" placeholder="server" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="连接端口">
+                        <a-input-number v-model:value="app.connectPort" :min="1" :max="65535" style="width: 100%" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="Modbus请求">
+                        <a-textarea v-model:value="app.modbusRequest" :rows="2" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="发送时间">
+                        <a-input v-model:value="app.sendTime" placeholder="4 5" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="随机种子">
+                        <a-input-number v-model:value="app.seed" style="width: 100%" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="重连间隔">
+                        <a-input v-model:value="app.reconnectInterval" placeholder="2s" @change="updateNodeConfig" />
+                      </a-form-item>
+                    </template>
+                    
+                    <template v-if="app.typename === 'ModbusMasterApp'">
+                      <a-form-item label="连接端口">
+                        <a-input-number v-model:value="app.connectPort" :min="1" :max="65535" style="width: 100%" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="连接数量">
+                        <a-input-number v-model:value="app.numConnect" :min="1" style="width: 100%" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="配置文件">
+                        <a-input v-model:value="app.configFile" placeholder="MasterConfig.json" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <a-form-item label="读取间隔">
+                        <a-input v-model:value="app.readInterval" placeholder="0.5s" @change="updateNodeConfig" />
+                      </a-form-item>
+                    </template>
+                    
+                    <template v-if="app.typename === 'ModbusSlaveApp' || app.typename === 'ModbusSlaveHILApp'">
+                      <a-form-item label="从站配置文件">
+                        <a-input v-model:value="app.slavesConfigPath" placeholder="SlaveConfig.json" @change="updateNodeConfig" />
+                      </a-form-item>
+                      <template v-if="app.typename === 'ModbusSlaveHILApp'">
+                        <a-form-item label="远程地址">
+                          <a-input v-model:value="app.remoteAddress" placeholder="113.54.185.18" @change="updateNodeConfig" />
+                        </a-form-item>
+                        <a-form-item label="远程端口">
+                          <a-input-number v-model:value="app.remotePort" :min="1" :max="65535" style="width: 100%" @change="updateNodeConfig" />
+                        </a-form-item>
+                      </template>
+                    </template>
+                    
+                    <a-button size="small" danger @click="removeApp(index)" style="margin-top: 8px">删除应用</a-button>
+                  </div>
+                  <a-button size="small" type="dashed" @click="addApp" style="width: 100%">+ 添加应用</a-button>
+                </a-form>
+              </a-tab-pane>
+            </a-tabs>
           </a-card>
           <a-card title="拓扑信息" v-else class="config-panel">
             <a-descriptions :column="1" size="small">
@@ -77,6 +196,13 @@
               <a-descriptions-item label="连接数">{{ graphData.edges.length }}</a-descriptions-item>
               <a-descriptions-item label="客户端数">{{ clientCount }}</a-descriptions-item>
             </a-descriptions>
+            
+            <a-divider />
+            
+            <a-space direction="vertical" style="width: 100%">
+              <a-button type="primary" @click="showMasterConfigModal" block>编辑 MasterConfig</a-button>
+              <a-button type="primary" @click="showSlaveConfigModal" block>编辑 SlaveConfig</a-button>
+            </a-space>
           </a-card>
         </a-col>
       </a-row>
@@ -90,6 +216,36 @@
       :footer="null"
     >
       <pre style="max-height: 600px; overflow: auto">{{ previewContent }}</pre>
+    </a-modal>
+    
+    <!-- MasterConfig Modal -->
+    <a-modal
+      v-model:open="masterConfigVisible"
+      title="MasterConfig.json 配置"
+      width="800px"
+      @ok="saveMasterConfig"
+    >
+      <a-textarea
+        v-model:value="masterConfigContent"
+        :rows="20"
+        placeholder="请输入 MasterConfig.json 内容"
+        style="font-family: monospace"
+      />
+    </a-modal>
+    
+    <!-- SlaveConfig Modal -->
+    <a-modal
+      v-model:open="slaveConfigVisible"
+      title="SlaveConfig.json 配置"
+      width="800px"
+      @ok="saveSlaveConfig"
+    >
+      <a-textarea
+        v-model:value="slaveConfigContent"
+        :rows="20"
+        placeholder="请输入 SlaveConfig.json 内容"
+        style="font-family: monospace"
+      />
     </a-modal>
   </div>
 </template>
@@ -130,6 +286,11 @@ const graphData = reactive<TopologyGraph>({
 })
 
 const selectedNode = ref<any>(null)
+const configTabKey = ref('basic')
+const masterConfigVisible = ref(false)
+const slaveConfigVisible = ref(false)
+const masterConfigContent = ref('')
+const slaveConfigContent = ref('')
 
 const clientCount = computed(() => {
   return graphData.nodes.filter(n => n.type === 'Client').length
@@ -234,8 +395,21 @@ const initGraph = () => {
         id: model.id,
         type: model.type,
         isHil: model.isHil || false,
-        localPort: model.localPort || 502
+        localPort: model.localPort || 502,
+        eth: model.eth || {
+          bitrate: '100Mbps',
+          channelLength: '10m',
+          ber: 0,
+          per: 0
+        },
+        capture: model.capture || {
+          enable: false,
+          moduleNamePatterns: 'eth[0]',
+          pcapFile: `results/${model.id}.pcap`
+        },
+        apps: model.apps || [getDefaultApp(model.type)]
       }
+      configTabKey.value = 'basic'
     }
   })
 
@@ -410,11 +584,163 @@ const updateNodeConfig = () => {
     graph.updateItem(node, {
       ...model,
       isHil: selectedNode.value.isHil,
-      localPort: selectedNode.value.localPort
+      localPort: selectedNode.value.localPort,
+      eth: selectedNode.value.eth,
+      capture: selectedNode.value.capture,
+      apps: selectedNode.value.apps
     })
+    
+    // Update graphData as well
+    const nodeIndex = graphData.nodes.findIndex(n => n.id === selectedNode.value.id)
+    if (nodeIndex !== -1) {
+      graphData.nodes[nodeIndex] = {
+        ...graphData.nodes[nodeIndex],
+        isHil: selectedNode.value.isHil,
+        localPort: selectedNode.value.localPort,
+        eth: selectedNode.value.eth,
+        capture: selectedNode.value.capture,
+        apps: selectedNode.value.apps
+      }
+    }
   }
   
   message.success('节点配置已更新')
+}
+
+const getDefaultApp = (nodeType: string) => {
+  const defaultApps: Record<string, any> = {
+    OperatorStation: {
+      typename: 'OperatorStationApp',
+      localPort: 2000,
+      connectAddress: 'server',
+      connectPort: 1000,
+      startTime: '1s',
+      interval: '0.5s',
+      reconnectInterval: '2s'
+    },
+    Server: {
+      typename: 'ModbusTcpServerApp',
+      localPort: 1000
+    },
+    Client: {
+      typename: 'ModbusSlaveApp',
+      localPort: 502,
+      slavesConfigPath: 'SlaveConfig.json'
+    }
+  }
+  return defaultApps[nodeType] || { typename: 'ModbusTcpServerApp', localPort: 502 }
+}
+
+const addApp = () => {
+  if (!selectedNode.value) return
+  selectedNode.value.apps.push(getDefaultApp(selectedNode.value.type))
+  updateNodeConfig()
+}
+
+const removeApp = (index: number) => {
+  if (!selectedNode.value) return
+  selectedNode.value.apps.splice(index, 1)
+  updateNodeConfig()
+}
+
+const showMasterConfigModal = () => {
+  // Load existing master config or show template
+  const template = {
+    connectArray: [
+      {
+        ipAddress: '10.0.0.7',
+        numSlave: 2,
+        slaves: [
+          {
+            slaveId: 1,
+            numBitGroup: 1,
+            numInputBitGroup: 0,
+            numRegisterGroup: 1,
+            numInputRegisterGroup: 0,
+            bitGroup: [
+              {
+                startAddress: 0,
+                number: 4,
+                data: [1, 0, 1, 0]
+              }
+            ],
+            inputBitGroup: [],
+            registerGroup: [
+              {
+                startAddress: 10,
+                number: 10,
+                data: [4660, 22136, 0, 0, 0, 0, 0, 0, 0, 0]
+              }
+            ],
+            inputRegisterGroup: []
+          }
+        ]
+      }
+    ]
+  }
+  masterConfigContent.value = JSON.stringify(template, null, 2)
+  masterConfigVisible.value = true
+}
+
+const showSlaveConfigModal = () => {
+  // Load existing slave config or show template
+  const template = {
+    connectArray: [
+      {
+        ipAddress: '10.0.0.7',
+        numSlave: 1,
+        slaves: [
+          {
+            slaveId: 1,
+            numBitGroup: 1,
+            numInputBitGroup: 0,
+            numRegisterGroup: 1,
+            numInputRegisterGroup: 0,
+            bitGroup: [
+              {
+                startAddress: 0,
+                number: 4,
+                data: [1, 0, 1, 0]
+              }
+            ],
+            inputBitGroup: [],
+            registerGroup: [
+              {
+                startAddress: 10,
+                number: 10,
+                data: [4660, 22136, 0, 0, 0, 0, 0, 0, 0, 0]
+              }
+            ],
+            inputRegisterGroup: []
+          }
+        ]
+      }
+    ]
+  }
+  slaveConfigContent.value = JSON.stringify(template, null, 2)
+  slaveConfigVisible.value = true
+}
+
+const saveMasterConfig = () => {
+  try {
+    JSON.parse(masterConfigContent.value)
+    graphData.meta.masterConfig = masterConfigContent.value
+    masterConfigVisible.value = false
+    message.success('MasterConfig 已保存')
+  } catch (error) {
+    message.error('JSON 格式错误，请检查')
+  }
+}
+
+const saveSlaveConfig = () => {
+  try {
+    JSON.parse(slaveConfigContent.value)
+    graphData.meta.slaveConfig = slaveConfigContent.value
+    slaveConfigVisible.value = false
+    message.success('SlaveConfig 已保存')
+  } catch (error) {
+    message.error('JSON 格式错误，请检查')
+  }
 }
 
 const goBack = () => {
@@ -466,10 +792,18 @@ const saveTopology = async () => {
       displayY: Math.round(node.y),
       params: {
         isHil: node.isHil || false,
-        apps: [{
-          typename: node.type === 'Client' ? 'ModbusSlaveApp' : 'ModbusTcpServerApp',
-          localPort: node.localPort || 502
-        }]
+        eth: node.eth || {
+          bitrate: '100Mbps',
+          channelLength: '10m',
+          ber: 0,
+          per: 0
+        },
+        capture: node.capture || {
+          enable: false,
+          moduleNamePatterns: 'eth[0]',
+          pcapFile: `results/${node.id}.pcap`
+        },
+        apps: node.apps || [getDefaultApp(node.type)]
       }
     }))
     

@@ -33,6 +33,8 @@ export interface NodeParams {
     bitrate?: string
     channelLength?: string
     delay?: string
+    ber?: number
+    per?: number
   }
   capture?: {
     enable: boolean
@@ -83,6 +85,19 @@ export interface GraphNode {
   y: number
   isHil?: boolean
   localPort?: number
+  eth?: {
+    bitrate?: string
+    channelLength?: string
+    delay?: string
+    ber?: number
+    per?: number
+  }
+  capture?: {
+    enable: boolean
+    moduleNamePatterns?: string
+    pcapFile?: string
+  }
+  apps?: any[]
 }
 
 export interface GraphEdge {
@@ -95,6 +110,8 @@ export interface GraphMeta {
   numClients?: number
   hilClientIndices?: number[]
   networkName?: string
+  masterConfig?: string
+  slaveConfig?: string
 }
 
 // Simulation types
